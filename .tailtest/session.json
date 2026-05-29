@@ -1,0 +1,63 @@
+{
+  "session_id": "2026-05-28T21-41-46-c2nvnt",
+  "started_at": "2026-05-28T21:41:46.000036+00:00",
+  "project_root": "C:\\Users\\super\\Downloads\\Desktop\\langgraph",
+  "runners": {},
+  "depth": "standard",
+  "paused": false,
+  "report_path": ".tailtest/reports/2026-05-28T21-41-46-c2nvnt.md",
+  "pending_files": [
+    {
+      "path": "libs/langgraph/tests/example_app/example_graph.py",
+      "language": "python",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/cli/js-examples/src/agent/graph.ts",
+      "language": "typescript",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/cli/langgraph_cli/schemas.py",
+      "language": "python",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/cli/langgraph_cli/cli.py",
+      "language": "python",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/langgraph/langgraph/pregel/_retry.py",
+      "language": "python",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/cli/langgraph_cli/host_backend.py",
+      "language": "python",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/langgraph/langgraph/errors.py",
+      "language": "python",
+      "status": "ramp-up"
+    },
+    {
+      "path": "libs/langgraph/langgraph/debug.py",
+      "language": "python",
+      "status": "new-file"
+    }
+  ],
+  "touched_files": [],
+  "fix_attempts": {},
+  "deferred_failures": [],
+  "generated_tests": {},
+  "packages": {},
+  "turn_start_mtime": 1780006951.0757265,
+  "ramp_up": true,
+  "post_tool_last_fire_mtime": 1780006891.247063,
+  "last_failures": [],
+  "complexity_scores": {
+    "libs/langgraph/langgraph/debug.py": 5
+  }
+}
