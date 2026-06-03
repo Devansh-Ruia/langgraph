@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any, Literal, overload
 
 from langgraph_sdk._async.http import HttpClient
+from langgraph_sdk._async.stream import AsyncThreadStream
+from langgraph_sdk._shared.utilities import _quote_path_param
 from langgraph_sdk.schema import (
     Checkpoint,
     Json,
@@ -90,7 +93,7 @@ class ThreadsClient:
         if params:
             query_params.update(params)
         return await self.http.get(
-            f"/threads/{thread_id}",
+            f"/threads/{_quote_path_param(thread_id)}",
             headers=headers,
             params=query_params or None,
         )
@@ -254,7 +257,7 @@ class ThreadsClient:
         if return_minimal:
             request_headers["Prefer"] = "return=minimal"
         return await self.http.patch(
-            f"/threads/{thread_id}",
+            f"/threads/{_quote_path_param(thread_id)}",
             json=payload,
             headers=request_headers or None,
             params=params,
@@ -287,7 +290,9 @@ class ThreadsClient:
             ```
 
         """
-        await self.http.delete(f"/threads/{thread_id}", headers=headers, params=params)
+        await self.http.delete(
+            f"/threads/{_quote_path_param(thread_id)}", headers=headers, params=params
+        )
 
     async def search(
         self,
@@ -430,7 +435,10 @@ class ThreadsClient:
 
         """
         return await self.http.post(
-            f"/threads/{thread_id}/copy", json=None, headers=headers, params=params
+            f"/threads/{_quote_path_param(thread_id)}/copy",
+            json=None,
+            headers=headers,
+            params=params,
         )
 
     async def prune(
@@ -586,7 +594,7 @@ class ThreadsClient:
         """
         if checkpoint:
             return await self.http.post(
-                f"/threads/{thread_id}/state/checkpoint",
+                f"/threads/{_quote_path_param(thread_id)}/state/checkpoint",
                 json={"checkpoint": checkpoint, "subgraphs": subgraphs},
                 headers=headers,
                 params=params,
@@ -596,7 +604,7 @@ class ThreadsClient:
             if params:
                 get_params = {**get_params, **dict(params)}
             return await self.http.get(
-                f"/threads/{thread_id}/state/{checkpoint_id}",
+                f"/threads/{_quote_path_param(thread_id)}/state/{_quote_path_param(checkpoint_id)}",
                 params=get_params,
                 headers=headers,
             )
@@ -605,7 +613,7 @@ class ThreadsClient:
             if params:
                 get_params = {**get_params, **dict(params)}
             return await self.http.get(
-                f"/threads/{thread_id}/state",
+                f"/threads/{_quote_path_param(thread_id)}/state",
                 params=get_params,
                 headers=headers,
             )
@@ -670,7 +678,10 @@ class ThreadsClient:
         if as_node:
             payload["as_node"] = as_node
         return await self.http.post(
-            f"/threads/{thread_id}/state", json=payload, headers=headers, params=params
+            f"/threads/{_quote_path_param(thread_id)}/state",
+            json=payload,
+            headers=headers,
+            params=params,
         )
 
     async def get_history(
@@ -719,10 +730,56 @@ class ThreadsClient:
         if checkpoint:
             payload["checkpoint"] = checkpoint
         return await self.http.post(
-            f"/threads/{thread_id}/history",
+            f"/threads/{_quote_path_param(thread_id)}/history",
             json=payload,
             headers=headers,
             params=params,
+        )
+
+    def stream(
+        self,
+        thread_id: str | None = None,
+        *,
+        assistant_id: str,
+        headers: Mapping[str, str] | None = None,
+        run_start_timeout: float | None = None,
+        transport: Literal["sse", "websocket"] = "sse",
+    ) -> AsyncThreadStream:
+        """Open a v3 thread-centric streaming session.
+
+        When `thread_id` is None, a fresh UUIDv4 is minted client-side and
+        included in the URL of subsequent `POST /threads/{thread_id}/...`
+        calls. The server creates the thread row lazily on the first
+        `run.start` (internal server detail — the SDK does not send any
+        `if_not_exists` flag). The v3 protocol response carries only
+        `run_id`, never `thread_id` — that's why the SDK mints the id
+        client-side.
+
+        Args:
+            thread_id: optional explicit thread identifier. Defaults to a
+                fresh UUIDv4.
+            assistant_id: assistant the run will use. Required.
+            headers: optional headers forwarded on every command and event
+                request for this stream session.
+            run_start_timeout: optional seconds to wait for an in-flight
+                `run.start` before subscribing operations raise
+                `asyncio.TimeoutError`. Defaults to `None` (wait forever).
+            transport: event transport to use — `"sse"` (default) or
+                `"websocket"`.
+
+        Returns:
+            An `AsyncThreadStream` to use as an async context manager.
+        """
+        if transport not in ("sse", "websocket"):
+            raise ValueError("transport must be 'sse' or 'websocket'.")
+        return AsyncThreadStream(
+            http=self.http,
+            thread_id=thread_id if thread_id is not None else str(uuid.uuid4()),
+            assistant_id=assistant_id,
+            headers=headers,
+            run_start_timeout=run_start_timeout,
+            explicit_thread_id=thread_id is not None,
+            transport_kind=transport,
         )
 
     async def join_stream(
@@ -763,7 +820,7 @@ class ThreadsClient:
         if params:
             query_params.update(params)
         return self.http.stream(
-            f"/threads/{thread_id}/stream",
+            f"/threads/{_quote_path_param(thread_id)}/stream",
             "GET",
             headers={
                 **({"Last-Event-ID": last_event_id} if last_event_id else {}),
